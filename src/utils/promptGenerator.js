@@ -2,7 +2,7 @@ export const createPrompt = (name, month, theme) => {
     return `Artistic Nature Photography: ${theme}
 
         Landscape Composition:
-        - Capture a breathtaking, immersive scene that embodies the ${month} ${theme}
+        - Capture a breathtaking, immersive scene that embodies the ${month} & ${theme}
         - Create a dynamic, high-detail landscape with vivid, natural colors
         - Integrate the name ${name} organically into the scene
 
@@ -10,7 +10,7 @@ export const createPrompt = (name, month, theme) => {
         - The name ${name} MUST be completely grounded within the natural environment
         - Text should not appear artificial or digitally overlaid
         - Text should be written in uppercase letters
-        - Letters must emerge naturally from landscape elements
+        - Letters must emerge naturally from landscape elements of ${theme}
         - Text should be an artistic focal point that harmonizes with the scene
 
         Seasonal Text Transformation Techniques:

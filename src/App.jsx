@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, AlertCircle } from 'lucide-react';
+import { Download, AlertCircle, X } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { HfInference } from '@huggingface/inference';
 import { Button } from './components/ui/button';
@@ -11,7 +11,7 @@ import { createPrompt } from './utils/promptGenerator';
 
 const MAX_RETRIES = 3;
 const RATE_LIMIT_DELAY = 60000; // 1 minute
-const BASE_DELAY = 5000; // 5 seconds
+const BASE_DELAY = 10000; // 10 seconds
 
 export default function App() {
   const [apiToken, setApiToken] = useState('');
@@ -22,6 +22,7 @@ export default function App() {
   const [currentOperation, setCurrentOperation] = useState('');
   const [generatedImages, setGeneratedImages] = useState({});
   const [errors, setErrors] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const handleExcelUpload = (event) => {
     const file = event.target.files[0];
@@ -51,28 +52,13 @@ export default function App() {
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const SEEDS = {
-    'January': 1000,
-    'February': 2000,
-    'March': 3000,
-    'April': 4000,
-    'May': 5000,
-    'June': 6000,
-    'July': 7000,
-    'August': 8000,
-    'September': 9000,
-    'October': 10000,
-    'November': 11000,
-    'December': 12000
-};
-
   const generateImageWithRetry = async (client, name, month, retryCount = 0) => {
     try {
       const response = await client.textToImage({
         model: "black-forest-labs/FLUX.1-schnell",
         inputs: createPrompt(name, month, SEASON_THEMES[month]),
         parameters: {
-          seed: SEEDS[month],
+          seed: (MONTHS.indexOf(month) + 1) * 1000,
           height: 1024,
           width: 1024
         }
@@ -108,12 +94,18 @@ export default function App() {
 
       setGenerating(true);
       setErrors([]);
+      setGeneratedImages(
+        names.reduce((acc, name) => ({
+          ...acc,
+          [name]: {}
+        }), {})
+      );
+      
       const client = new HfInference(apiToken);
       const totalOperations = names.length * MONTHS.length;
       let completed = 0;
       
       for (const name of names) {
-        const nameImages = {};
         const failedMonths = [];
         
         for (const month of MONTHS) {
@@ -121,7 +113,13 @@ export default function App() {
           
           try {
             const imageUrl = await generateImageWithRetry(client, name, month);
-            nameImages[month] = imageUrl;
+            setGeneratedImages(prev => ({
+              ...prev,
+              [name]: {
+                ...prev[name],
+                [month]: imageUrl
+              }
+            }));
             completed++;
             setProgress((completed / totalOperations) * 100);
           } catch (err) {
@@ -129,15 +127,7 @@ export default function App() {
             setErrors(prev => [...prev, `Failed to generate ${month} image for ${name}: ${err.message}`]);
           }
           
-          // Add a small delay between successful generations
           await sleep(BASE_DELAY);
-        }
-        
-        if (Object.keys(nameImages).length > 0) {
-          setGeneratedImages(prev => ({
-            ...prev,
-            [name]: nameImages
-          }));
         }
         
         if (failedMonths.length > 0) {
@@ -247,7 +237,10 @@ export default function App() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(months).map(([month, imageUrl]) => (
               <div key={month} className="space-y-2">
-                <div className="aspect-square relative overflow-hidden rounded-lg">
+                <div 
+                  className="aspect-square relative overflow-hidden rounded-lg cursor-pointer transform transition-transform duration-300 hover:scale-105 hover:shadow-lg"
+                  onClick={() => setSelectedImage({ url: imageUrl, name, month })}
+                >
                   <img
                     src={imageUrl}
                     alt={`${name} - ${month}`}
@@ -260,6 +253,37 @@ export default function App() {
           </div>
         </div>
       ))}
+
+      {/* Modal for displaying selected image */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div 
+            className="relative bg-white rounded-lg p-2 w-full max-w-[600px]"
+            onClick={e => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              className="absolute top-2 right-2 z-10"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <div className="w-full max-h-[60vh] flex items-center justify-center">
+              <img
+                src={selectedImage.url}
+                alt={`${selectedImage.name} - ${selectedImage.month}`}
+                className="max-w-full max-h-[60vh] object-contain"
+              />
+            </div>
+            <p className="text-center mt-2 font-medium">
+              {selectedImage.name} - {selectedImage.month}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
