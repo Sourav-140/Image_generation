@@ -9,6 +9,7 @@ import { Progress } from './components/ui/progress';
 import Alert from './components/ui/alert';
 import { MONTHS, SEASON_THEMES } from './constants/themes';
 import { createPrompt } from './utils/promptGenerator';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MAX_RETRIES = 3;
 const RATE_LIMIT_DELAY = 60000; // 1 minute
@@ -253,230 +254,360 @@ export default function App() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
-        <h1 className="text-2xl font-bold mb-6">AI Image Generator</h1>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hugging Face API Token
-            </label>
-            <Input
-              type="password"
-              placeholder="Enter your API token"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
+      <div className="container mx-auto p-4 max-w-5xl">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-slate-200"
+        >
+          <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            AI Image Generator
+          </h1>
+          
+          <div className="space-y-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Hugging Face API Token
+              </label>
+              <Input
+                type="password"
+                placeholder="Enter your API token"
+                value={apiToken}
+                onChange={(e) => setApiToken(e.target.value)}
+                className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
+              />
+            </motion.div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Excel File
-            </label>
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelUpload}
-            />
-            {names.length > 0 && (
-              <span className="mt-2 text-sm text-gray-500 block">
-                {names.length} names loaded
-              </span>
-            )}
-          </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Excel File
+              </label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleExcelUpload}
+                className="transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-blue-500 file:text-white file:rounded-lg hover:file:bg-blue-600"
+              />
+              <AnimatePresence>
+                {names.length > 0 && (
+                  <motion.span
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-2 text-sm text-slate-500 block"
+                  >
+                    {names.length} names loaded
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
-          {errors.length > 0 && (
-            <div className="space-y-2">
-              {errors.map((error, index) => (
-                <Alert key={index} variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <div>{error}</div>
-                </Alert>
-              ))}
-            </div>
-          )}
+            <AnimatePresence>
+              {errors.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2"
+                >
+                  {errors.map((error, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <div>{error}</div>
+                      </Alert>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Button
-                variant={generationType === 'all' ? "outline" : "ghost"}
-                onClick={() => setGenerationType('all')}
-                className={`flex-1 ${
-                  generationType === 'all' 
-                    ? "bg-blue-100 hover:bg-blue-200 border-blue-500 text-blue-700" 
-                    : ""
-                }`}
-              >
-                Generate All
-              </Button>
-              <Button
-                variant={generationType === 'custom' ? "outline" : "ghost"}
-                onClick={() => setGenerationType('custom')}
-                className={`flex-1 ${
-                  generationType === 'custom' 
-                    ? "bg-blue-100 hover:bg-blue-200 border-blue-500 text-blue-700" 
-                    : ""
-                }`}
-              >
-                Custom Generation
-              </Button>
-            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-6"
+            >
+              <div className="flex gap-4 p-1 bg-slate-100 rounded-xl">
+                <Button
+                  variant={generationType === 'all' ? "outline" : "ghost"}
+                  onClick={() => setGenerationType('all')}
+                  className={`flex-1 transition-all duration-300 ${
+                    generationType === 'all' 
+                      ? "bg-white shadow-md hover:shadow-lg hover:scale-[1.02]" 
+                      : "hover:bg-white/50"
+                  }`}
+                >
+                  Generate All
+                </Button>
+                <Button
+                  variant={generationType === 'custom' ? "outline" : "ghost"}
+                  onClick={() => setGenerationType('custom')}
+                  className={`flex-1 transition-all duration-300 ${
+                    generationType === 'custom' 
+                      ? "bg-white shadow-md hover:shadow-lg hover:scale-[1.02]" 
+                      : "hover:bg-white/50"
+                  }`}
+                >
+                  Custom Generation
+                </Button>
+              </div>
 
-            {generationType === 'custom' ? (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  {names.map((name) => (
-                    <div key={name} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Button
-                          variant={selectedNames.includes(name) ? "outline" : "ghost"}
-                          size="sm"
-                          onClick={() => handleNameSelection(name)}
-                          className={`text-sm ${
-                            selectedNames.includes(name) 
-                              ? "bg-blue-100 hover:bg-blue-200 border-blue-500 text-blue-700" 
-                              : ""
-                          }`}
+              <AnimatePresence mode="wait">
+                {generationType === 'custom' ? (
+                  <motion.div
+                    key="custom"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-4">
+                      {names.map((name, index) => (
+                        <motion.div
+                          key={name}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="border border-slate-200 rounded-xl p-4 space-y-2 hover:shadow-md transition-all duration-300"
                         >
-                          {name}
-                        </Button>
-                        {selectedNames.includes(name) && (
-                          <span className="text-sm text-gray-600">
-                            {nameMonthSelections[name]?.length || 0} months selected
-                          </span>
-                        )}
-                      </div>
-                      
-                      {selectedNames.includes(name) && (
-                        <div className="flex flex-wrap gap-2 pl-4">
-                          {MONTHS.map((month) => (
+                          <div className="flex items-center justify-between">
                             <Button
-                              key={`${name}-${month}`}
-                              variant={nameMonthSelections[name]?.includes(month) ? "outline" : "ghost"}
+                              variant={selectedNames.includes(name) ? "outline" : "ghost"}
                               size="sm"
-                              onClick={() => handleMonthSelection(name, month)}
-                              className={`text-sm ${
-                                nameMonthSelections[name]?.includes(month)
-                                  ? "bg-green-100 hover:bg-green-200 border-green-500 text-green-700" 
+                              onClick={() => handleNameSelection(name)}
+                              className={`text-sm transition-all duration-300 ${
+                                selectedNames.includes(name) 
+                                  ? "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" 
                                   : ""
                               }`}
                             >
-                              {month}
+                              {name}
                             </Button>
-                          ))}
-                        </div>
-                      )}
+                            <AnimatePresence>
+                              {selectedNames.includes(name) && (
+                                <motion.span
+                                  initial={{ opacity: 0, x: 20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: 20 }}
+                                  className="text-sm text-slate-600"
+                                >
+                                  {nameMonthSelections[name]?.length || 0} months selected
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          
+                          <AnimatePresence>
+                            {selectedNames.includes(name) && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="flex flex-wrap gap-2 pl-4"
+                              >
+                                {MONTHS.map((month, monthIndex) => (
+                                  <motion.div
+                                    key={`${name}-${month}`}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: monthIndex * 0.05 }}
+                                  >
+                                    <Button
+                                      variant={nameMonthSelections[name]?.includes(month) ? "outline" : "ghost"}
+                                      size="sm"
+                                      onClick={() => handleMonthSelection(name, month)}
+                                      className={`text-sm transition-all duration-300 ${
+                                        nameMonthSelections[name]?.includes(month)
+                                          ? "bg-green-50 hover:bg-green-100 border-green-200 text-green-700 transform hover:scale-105" 
+                                          : "hover:bg-slate-100"
+                                      }`}
+                                    >
+                                      {month}
+                                    </Button>
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-gray-600">
-                      Total images to generate: {
-                        Object.values(nameMonthSelections).reduce(
-                          (total, months) => total + months.length,
-                          0
-                        )
-                      }
-                    </p>
-                  </div>
-                  <Button
-                    onClick={generateCustomImages}
-                    disabled={
-                      generating || 
-                      !apiToken || 
-                      Object.values(nameMonthSelections).every(months => months.length === 0)
-                    }
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-slate-600">
+                          Total images to generate: {
+                            Object.values(nameMonthSelections).reduce(
+                              (total, months) => total + months.length,
+                              0
+                            )
+                          }
+                        </p>
+                      </div>
+                      <Button
+                        onClick={generateCustomImages}
+                        disabled={
+                          generating || 
+                          !apiToken || 
+                          Object.values(nameMonthSelections).every(months => months.length === 0)
+                        }
+                        className="bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
+                      >
+                        Generate Selected Images
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
                   >
-                    Generate Selected Images
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                onClick={generateImages}
-                disabled={generating || !apiToken || !excelFile}
-                className="w-full"
-              >
-                Generate All Images
-              </Button>
-            )}
-          </div>
+                    <Button
+                      onClick={generateImages}
+                      disabled={generating || !apiToken || !excelFile}
+                      className="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
+                    >
+                      Generate All Images
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
-          {generating && (
-            <div className="space-y-2">
-              <Progress value={progress} />
-              <p className="text-sm text-gray-500 text-center">{currentOperation}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {Object.entries(generatedImages).map(([name, months]) => (
-        <div key={name} className="bg-white shadow-lg rounded-lg p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">{name}</h2>
-            <Button
-              variant="outline"
-              onClick={() => downloadImages(name)}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download All
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(months).map(([month, imageUrl]) => (
-              <div key={month} className="space-y-2">
-                <div 
-                  className="aspect-square relative overflow-hidden rounded-lg cursor-pointer transform transition-transform duration-300 hover:scale-105 hover:shadow-lg"
-                  onClick={() => setSelectedImage({ url: imageUrl, name, month })}
+            <AnimatePresence>
+              {generating && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="space-y-2"
                 >
-                  <img
-                    src={imageUrl}
-                    alt={`${name} - ${month}`}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <p className="text-sm font-medium text-center">{month}</p>
-              </div>
-            ))}
+                  <Progress value={progress} className="h-2 bg-slate-200">
+                    <motion.div
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </Progress>
+                  <p className="text-sm text-slate-500 text-center">{currentOperation}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-      ))}
+        </motion.div>
 
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div 
-            className="relative bg-white rounded-lg p-2 w-full max-w-[600px]"
-            onClick={e => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              className="absolute top-2 right-2 z-10"
+        <motion.div layout className="space-y-8">
+          {Object.entries(generatedImages).map(([name, months], index) => (
+            <motion.div
+              key={name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2 }}
+              className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-slate-200"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">{name}</h2>
+                <Button
+                  variant="outline"
+                  onClick={() => downloadImages(name)}
+                  className="flex items-center gap-2 hover:bg-blue-50 transition-all duration-300"
+                >
+                  <Download className="h-4 w-4" />
+                  Download All
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(months).map(([month, imageUrl]) => (
+                  <motion.div
+                    key={month}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    className="space-y-2"
+                  >
+                    <div 
+                      className="aspect-square relative overflow-hidden rounded-xl cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
+                      onClick={() => setSelectedImage({ url: imageUrl, name, month })}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${name} - ${month}`}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-center text-slate-700">{month}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <AnimatePresence>
+          {selectedImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
               onClick={() => setSelectedImage(null)}
             >
-              <X className="h-4 w-4" />
-            </Button>
-            <div className="w-full max-h-[60vh] flex items-center justify-center">
-              <img
-                src={selectedImage.url}
-                alt={`${selectedImage.name} - ${selectedImage.month}`}
-                className="max-w-full max-h-[60vh] object-contain"
-              />
-            </div>
-            <p className="text-center mt-2 font-medium">
-              {selectedImage.name} - {selectedImage.month}
-            </p>
-          </div>
-        </div>
-      )}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative bg-white rounded-2xl p-4 w-full max-w-[600px] shadow-2xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <Button
+                  variant="ghost"
+                  className="absolute top-2 right-2 z-10 hover:bg-slate-100 transition-colors duration-200"
+                  onClick={() => setSelectedImage(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full max-h-[60vh] flex items-center justify-center"
+                >
+                  <img
+                    src={selectedImage.url}
+                    alt={`${selectedImage.name} - ${selectedImage.month}`}
+                    className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                  />
+                </motion.div>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center mt-4 font-medium text-slate-700"
+                >
+                  {selectedImage.name} - {selectedImage.month}
+                </motion.p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
