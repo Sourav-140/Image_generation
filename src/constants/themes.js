@@ -4,16 +4,16 @@ export const MONTHS = [
 ];
 
 export const SEASON_THEMES = {
-    'January': 'Snowy Scandinavian forests, cozy cabin, grazing reindeer, aurora borealis glowing in serenity.',
+    'January': 'Calm snowy clearing, grazing reindeer, Northen lights, pine forest backdrop, moonlit snow drifts, clear starry night sky, distant cabin lights',
     'February': 'Soft winter landscape, gentle snow-covered field, bare trees, pale blue sky, distant pink horizon at sunset.',
-    'March': 'Cherry blossoms, Japanese garden, tranquil river, torii gate, Mount Fuji, floating pink petals.',
+    'March': 'Spring, cherry blossoms, new growth, warm sunshine',
     'April': 'Spring, rain showers, green meadows, fresh buds',
     'May': 'Spring, warm winds, bright flowers, blue skies',
     'June': 'Vibrant tropical beach scene, crystal-clear waters, swaying palm trees, golden sunset, colorful coral reefs.',
-    'July': 'African savanna, golden hour, one elephant, giraffe & lion, warm sunset, breezy grass.',
-    'August': 'Mongolian grasslands, golden steppe, one wild horses galloping, one nomadic yurt, distant mountain silhouettes, thunderstorm brewing on horizon, amber light piercing storm clouds, windswept grass seas.',
+    'July': 'African savanna sunset, handcrafted text on weathered wooden fence post, tall golden grass plains, warm orange sky, gentle evening breeze',
+    'August': 'Gentle monsoon shower, bright green paddy fields, white egrets in flight, simple village road, coconut palms swaying, clear puddles reflecting sky, peaceful afternoon light',
     'September': 'Fall harvest farm, golden fields, red barn, pumpkins, autumn foliage, sunset glow, tranquil landscape.',
-    'October': 'New Zealand mystical Hobbiton, misty rolling green hills, ancient moss-covered stone walls, vintage wooden fences, soft morning fog, delicate mushroom clusters, rustic cottage with thatched roof, gentle stream, autumn-tinged maple trees, magical pastoral tranquility.',
-    'November': 'Canadian Rocky Mountain wilderness, early winter alpine landscape, crystal-clear glacial lake, snow-dusted pine forests, lone timber wolf, rocky peaks emerging from cloud layers, quiet anticipation of winter.',
+    'October': 'Misty village morning, golden rice fields, old banyan tree, clay house with blue doors, marigold flowers in the garden, village path, calm pond, warm sunlight, peaceful countryside',
+    'November': 'Misty dawn light, harvested wheat fields, scattered hay bales, dry golden grass, earthy soil path, soft morning horizon, pale autumn sky',
     'December': 'German Christmas market, festive stalls, snow-covered houses, mulled wine, tree decorations, magical joyful ambiance.'
 };

@@ -1,5 +1,5 @@
 export const createPrompt = (name, month, theme) => {
-    return `Artistic Nature Photography: ${theme}
+    return `Artistic Nature Photography: ${theme}  
 
         Landscape Composition:
         - Capture a breathtaking, immersive scene that embodies the ${month} & ${theme}
@@ -7,15 +7,16 @@ export const createPrompt = (name, month, theme) => {
         - Integrate the name ${name} organically into the scene
 
         Text Integration Guidelines:
-        - The name ${name} MUST be completely grounded within the natural environment
+        - The name ${name} must be completely grounded within the natural environment
         - Text should not appear artificial or digitally overlaid
         - Text should be written in uppercase letters
         - Letters must emerge naturally from landscape elements of ${theme}
         - Text should be an artistic focal point that harmonizes with the scene
 
         Seasonal Text Transformation Techniques:
+
         - Winter Scene: 
-        * Letters carved in frost
+        * Letters carved in frost in hand
         * Formed by snow patterns
         * Shaped by ice crystals
         * Emerging from snowy branches or frozen lake textures
@@ -45,6 +46,7 @@ export const createPrompt = (name, month, theme) => {
         - November Scene:
         * Letters crafted through snow drift sculptural patterns
         * Formed by pine tree branch and needle arrangements
+
 
         Technical Specifications:
         - Ultra-high resolution

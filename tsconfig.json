@@ -9,9 +9,11 @@
       }
     ],
     "compilerOptions": {
+      "jsx": "react",
       "baseUrl": ".",
       "paths": {
         "@/*": ["./src/*"]
+        
       }
     }
   }
