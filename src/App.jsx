@@ -1,11 +1,10 @@
 // App.jsx
-import React, { useState } from 'react';
-import { Download, AlertCircle, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Download, AlertCircle, X, Loader2, StopCircle, RotateCcw } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { HfInference } from '@huggingface/inference';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
-import { Progress } from './components/ui/progress';
 import Alert from './components/ui/alert';
 import { MONTHS, SEASON_THEMES } from './constants/themes';
 import { createPrompt } from './utils/promptGenerator';
@@ -15,21 +14,59 @@ const MAX_RETRIES = 3;
 const RATE_LIMIT_DELAY = 60000; // 1 minute
 const BASE_DELAY = 12000; // 12 seconds
 
+const ImageTile = ({ imageUrl, isGenerating, name, month, onClick, show }) => {
+  if (!show) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.05 }}
+      className="space-y-2"
+    >
+      <div 
+        className="aspect-square relative overflow-hidden rounded-xl cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
+        onClick={() => !isGenerating && onClick()}
+      >
+        {isGenerating ? (
+          <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+            <p className="text-sm text-slate-600 text-center">Generating {month} for {name}...</p>
+          </div>
+        ) : (
+          imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={`${name} - ${month}`}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+              <p className="text-sm text-slate-500">Waiting to generate...</p>
+            </div>
+          )
+        )}
+      </div>
+      <p className="text-sm font-medium text-center text-slate-700">{month}</p>
+    </motion.div>
+  );
+};
+
 export default function App() {
   const [apiToken, setApiToken] = useState('');
   const [excelFile, setExcelFile] = useState(null);
   const [names, setNames] = useState([]);
   const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [currentOperation, setCurrentOperation] = useState('');
   const [generatedImages, setGeneratedImages] = useState({});
+  const [generatingStates, setGeneratingStates] = useState({});
   const [errors, setErrors] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [generationType, setGenerationType] = useState('all');
-  
-  // New state structure for per-name month selection
   const [selectedNames, setSelectedNames] = useState([]);
   const [nameMonthSelections, setNameMonthSelections] = useState({});
+  const [visibleTiles, setVisibleTiles] = useState({});
+  const stopGenerationRef = useRef(false);
 
   const handleExcelUpload = (event) => {
     const file = event.target.files[0];
@@ -95,12 +132,10 @@ export default function App() {
   const handleNameSelection = (name) => {
     if (selectedNames.includes(name)) {
       setSelectedNames(selectedNames.filter(n => n !== name));
-      // Remove the month selections for this name
       const { [name]: removed, ...rest } = nameMonthSelections;
       setNameMonthSelections(rest);
     } else {
       setSelectedNames([...selectedNames, name]);
-      // Initialize empty month selection for this name
       setNameMonthSelections({
         ...nameMonthSelections,
         [name]: []
@@ -122,26 +157,75 @@ export default function App() {
     });
   };
 
+  const resetMonthSelection = (name) => {
+    setNameMonthSelections(prev => {
+      const { [name]: removed, ...rest } = prev;
+      return {
+        ...rest,
+        [name]: []
+      };
+    });
+  };
+
+  const stopGeneration = () => {
+    stopGenerationRef.current = true;
+    setCurrentOperation('Stopping generation...');
+  };
+
   const generateImages = async () => {
     try {
       validateApiToken(apiToken);
       if (!excelFile || names.length === 0) {
         throw new Error('Please provide an Excel file with valid names');
       }
-
+  
       setGenerating(true);
       setErrors([]);
-      setGeneratedImages({});
+      stopGenerationRef.current = false;
+      
+      const initialStates = {};
+      const initialVisibility = {};
+      names.forEach(name => {
+        initialStates[name] = {};
+        initialVisibility[name] = {};
+        MONTHS.forEach(month => {
+          initialStates[name][month] = false;
+          initialVisibility[name][month] = false;
+        });
+      });
+      setGeneratingStates(initialStates);
+      setVisibleTiles(initialVisibility);
+      
+      const initialImages = {};
+      names.forEach(name => {
+        initialImages[name] = {};
+      });
+      setGeneratedImages(initialImages);
       
       const client = new HfInference(apiToken);
-      const totalOperations = names.length * MONTHS.length;
-      let completed = 0;
       
       for (const name of names) {
+        if (stopGenerationRef.current) {
+          throw new Error('Generation stopped by user');
+        }
+
         const failedMonths = [];
         
         for (const month of MONTHS) {
+          if (stopGenerationRef.current) {
+            throw new Error('Generation stopped by user');
+          }
+
+          setVisibleTiles(prev => ({
+            ...prev,
+            [name]: { ...prev[name], [month]: true }
+          }));
+          
           setCurrentOperation(`Generating ${month} image for ${name}...`);
+          setGeneratingStates(prev => ({
+            ...prev,
+            [name]: { ...prev[name], [month]: true }
+          }));
           
           try {
             const imageUrl = await generateImageWithRetry(client, name, month);
@@ -152,11 +236,14 @@ export default function App() {
                 [month]: imageUrl
               }
             }));
-            completed++;
-            setProgress((completed / totalOperations) * 100);
           } catch (err) {
             failedMonths.push(month);
             setErrors(prev => [...prev, `Failed to generate ${month} image for ${name}: ${err.message}`]);
+          } finally {
+            setGeneratingStates(prev => ({
+              ...prev,
+              [name]: { ...prev[name], [month]: false }
+            }));
           }
           
           await sleep(BASE_DELAY);
@@ -173,6 +260,7 @@ export default function App() {
     } finally {
       setGenerating(false);
       setCurrentOperation('');
+      stopGenerationRef.current = false;
     }
   };
 
@@ -180,31 +268,62 @@ export default function App() {
     try {
       validateApiToken(apiToken);
       
-      // Check if any selections have been made
       const hasSelections = Object.values(nameMonthSelections).some(months => months.length > 0);
       if (!hasSelections) {
         throw new Error('Please select at least one name and month');
       }
-
+  
       setGenerating(true);
       setErrors([]);
+      stopGenerationRef.current = false;
+      
+      const initialStates = {};
+      const initialVisibility = {};
+      selectedNames.forEach(name => {
+        initialStates[name] = {};
+        initialVisibility[name] = {};
+        nameMonthSelections[name].forEach(month => {
+          initialStates[name][month] = false;
+          initialVisibility[name][month] = false;
+        });
+      });
+      setGeneratingStates(initialStates);
+      setVisibleTiles(initialVisibility);
+      
+      const initialImages = {};
+      selectedNames.forEach(name => {
+        initialImages[name] = {};
+      });
+      setGeneratedImages(prev => ({
+        ...prev,
+        ...initialImages
+      }));
       
       const client = new HfInference(apiToken);
       
-      // Calculate total operations based on individual selections
-      const totalOperations = Object.entries(nameMonthSelections).reduce(
-        (total, [_, months]) => total + months.length,
-        0
-      );
-      
-      let completed = 0;
-      
       for (const name of selectedNames) {
+        if (stopGenerationRef.current) {
+          throw new Error('Generation stopped by user');
+        }
+
         const selectedMonths = nameMonthSelections[name] || [];
         const failedMonths = [];
         
         for (const month of selectedMonths) {
+          if (stopGenerationRef.current) {
+            throw new Error('Generation stopped by user');
+          }
+
+          setVisibleTiles(prev => ({
+            ...prev,
+            [name]: { ...prev[name], [month]: true }
+          }));
+          
           setCurrentOperation(`Generating ${month} image for ${name}...`);
+          setGeneratingStates(prev => ({
+            ...prev,
+            [name]: { ...prev[name], [month]: true }
+          }));
           
           try {
             const imageUrl = await generateImageWithRetry(client, name, month);
@@ -215,11 +334,14 @@ export default function App() {
                 [month]: imageUrl
               }
             }));
-            completed++;
-            setProgress((completed / totalOperations) * 100);
           } catch (err) {
             failedMonths.push(month);
             setErrors(prev => [...prev, `Failed to generate ${month} image for ${name}: ${err.message}`]);
+          } finally {
+            setGeneratingStates(prev => ({
+              ...prev,
+              [name]: { ...prev[name], [month]: false }
+            }));
           }
           
           await sleep(BASE_DELAY);
@@ -236,6 +358,7 @@ export default function App() {
     } finally {
       setGenerating(false);
       setCurrentOperation('');
+      stopGenerationRef.current = false;
     }
   };
 
@@ -387,18 +510,30 @@ export default function App() {
                           className="border border-slate-200 rounded-xl p-4 space-y-2 hover:shadow-md transition-all duration-300"
                         >
                           <div className="flex items-center justify-between">
-                            <Button
-                              variant={selectedNames.includes(name) ? "outline" : "ghost"}
-                              size="sm"
-                              onClick={() => handleNameSelection(name)}
-                              className={`text-sm transition-all duration-300 ${
-                                selectedNames.includes(name) 
-                                  ? "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" 
-                                  : ""
-                              }`}
-                            >
-                              {name}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant={selectedNames.includes(name) ? "outline" : "ghost"}
+                                size="sm"
+                                onClick={() => handleNameSelection(name)}
+                                className={`text-sm transition-all duration-300 ${
+                                  selectedNames.includes(name) 
+                                    ? "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" 
+                                    : ""
+                                }`}
+                              >
+                                {name}
+                              </Button>
+                              {selectedNames.includes(name) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetMonthSelection(name)}
+                                  className="text-slate-500 hover:text-slate-700"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                             <AnimatePresence>
                               {selectedNames.includes(name) && (
                                 <motion.span
@@ -460,17 +595,28 @@ export default function App() {
                           }
                         </p>
                       </div>
-                      <Button
-                        onClick={generateCustomImages}
-                        disabled={
-                          generating || 
-                          !apiToken || 
-                          Object.values(nameMonthSelections).every(months => months.length === 0)
-                        }
-                        className="bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
-                      >
-                        Generate Selected Images
-                      </Button>
+                      {!generating ? (
+                        <Button
+                          onClick={generateCustomImages}
+                          disabled={
+                            generating || 
+                            !apiToken || 
+                            Object.values(nameMonthSelections).every(months => months.length === 0)
+                          }
+                          className="bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
+                        >
+                          Generate Selected Images
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={stopGeneration}
+                          variant="destructive"
+                          className="bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105"
+                        >
+                          <StopCircle className="h-4 w-4 mr-2" />
+                          Stop Generation
+                        </Button> 
+                      )}
                     </div>
                   </motion.div>
                 ) : (
@@ -480,37 +626,28 @@ export default function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                   >
-                    <Button
-                      onClick={generateImages}
-                      disabled={generating || !apiToken || !excelFile}
-                      className="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
-                    >
-                      Generate All Images
-                    </Button>
+                    {!generating ? (
+                      <Button
+                        onClick={generateImages}
+                        disabled={generating || !apiToken || !excelFile}
+                        className="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
+                      >
+                        Generate All Images
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={stopGeneration}
+                        variant="destructive"
+                        className="w-full bg-blue-500 hover:bg-blue-600 transition-all text-white duration-300 transform hover:scale-105"
+                      >
+                        <StopCircle className="h-4 w-4 mr-2" />
+                        Stop Generation
+                      </Button>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
-
-            <AnimatePresence>
-              {generating && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="space-y-2"
-                >
-                  <Progress value={progress} className="h-2 bg-slate-200">
-                    <motion.div
-                      className="h-full bg-blue-500 rounded-full"
-                      style={{ width: `${progress}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </Progress>
-                  <p className="text-sm text-slate-500 text-center">{currentOperation}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </motion.div>
 
@@ -536,26 +673,24 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(months).map(([month, imageUrl]) => (
-                  <motion.div
+                {MONTHS.map((month) => (
+                  <ImageTile
                     key={month}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    className="space-y-2"
-                  >
-                    <div 
-                      className="aspect-square relative overflow-hidden rounded-xl cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
-                      onClick={() => setSelectedImage({ url: imageUrl, name, month })}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`${name} - ${month}`}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <p className="text-sm font-medium text-center text-slate-700">{month}</p>
-                  </motion.div>
+                    imageUrl={generatedImages[name]?.[month]}
+                    isGenerating={generatingStates[name]?.[month]}
+                    name={name}
+                    month={month}
+                    show={visibleTiles[name]?.[month]}
+                    onClick={() => {
+                      if (generatedImages[name]?.[month]) {
+                        setSelectedImage({ 
+                          url: generatedImages[name][month], 
+                          name, 
+                          month 
+                        });
+                      }
+                    }}
+                  />
                 ))}
               </div>
             </motion.div>
