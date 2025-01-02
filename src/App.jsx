@@ -1,6 +1,6 @@
 // App.jsx
-import React, { useState, useRef } from 'react';
-import { Download, AlertCircle, X, Loader2, StopCircle, RotateCcw } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Download, AlertCircle, X, Loader2, StopCircle, RotateCcw, Sun, Moon } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { HfInference } from '@huggingface/inference';
 import { Button } from './components/ui/button';
@@ -29,9 +29,9 @@ const ImageTile = ({ imageUrl, isGenerating, name, month, onClick, show }) => {
         onClick={() => !isGenerating && onClick()}
       >
         {isGenerating ? (
-          <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
+          <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center p-4">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-            <p className="text-sm text-slate-600 text-center">Generating {month} for {name}...</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center">Generating {month} for {name}...</p>
           </div>
         ) : (
           imageUrl ? (
@@ -41,13 +41,13 @@ const ImageTile = ({ imageUrl, isGenerating, name, month, onClick, show }) => {
               className="object-cover w-full h-full"
             />
           ) : (
-            <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-              <p className="text-sm text-slate-500">Waiting to generate...</p>
+            <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Waiting to generate...</p>
             </div>
           )
         )}
       </div>
-      <p className="text-sm font-medium text-center text-slate-700">{month}</p>
+      <p className="text-sm font-medium text-center text-slate-700 dark:text-slate-300">{month}</p>
     </motion.div>
   );
 };
@@ -66,7 +66,16 @@ export default function App() {
   const [selectedNames, setSelectedNames] = useState([]);
   const [nameMonthSelections, setNameMonthSelections] = useState({});
   const [visibleTiles, setVisibleTiles] = useState({});
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const stopGenerationRef = useRef(false);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   const handleExcelUpload = (event) => {
     const file = event.target.files[0];
@@ -377,24 +386,41 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
-      <div className="container mx-auto p-4 max-w-5xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-black dark:to-black-900 py-8">
+
+      {/* Dark Mode Toggle */}
+      <div className="absolute top-2 right-4 z-50">
+      <Button
+        variant="none"
+        size="icon"
+        onClick={() => setIsDarkMode(!isDarkMode)}
+        className="rounded-full items-center w-10 h-10 bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors duration-200"
+      >
+        {isDarkMode ? (
+          <Sun className="h-4 w-3 text-slate-100" />
+        ) : (
+          <Moon className="h-4 w-3 text-slate-700" />
+        )}
+      </Button>
+    </div>
+
+      <div className="container mx-auto p-6 max-w-5xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-slate-200"
+          className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-slate-200 dark:border-gray-700"
         >
           <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             AI Image Generator
           </h1>
           
           <div className="space-y-8">
-            <motion.div
+          <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Hugging Face API Token
               </label>
               <Input
@@ -402,7 +428,7 @@ export default function App() {
                 placeholder="Enter your API token"
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
-                className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 hover:border-blue-400"
+                className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 hover:border-blue-400 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               />
             </motion.div>
 
@@ -411,14 +437,14 @@ export default function App() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Excel File
               </label>
               <Input
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleExcelUpload}
-                className="transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-blue-500 file:text-white file:rounded-lg hover:file:bg-blue-600"
+                className="transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-gradient-to-r from-[#2c3e95]/90 to-[#3fa88e]/80   file:text-white file:rounded-lg hover:file:bg-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               />
               <AnimatePresence>
                 {names.length > 0 && (
@@ -426,7 +452,7 @@ export default function App() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mt-2 text-sm text-slate-500 block"
+                    className="mt-2 text-sm text-slate-500 dark:text-slate-400 block"
                   >
                     {names.length} names loaded
                   </motion.span>
@@ -466,14 +492,14 @@ export default function App() {
               transition={{ delay: 0.4 }}
               className="space-y-6"
             >
-              <div className="flex gap-4 p-1 bg-slate-100 rounded-xl">
+              <div className="flex gap-4 p-1 bg-slate-100 dark:bg-slate-700 rounded-xl">
                 <Button
                   variant={generationType === 'all' ? "outline" : "ghost"}
                   onClick={() => setGenerationType('all')}
                   className={`flex-1 transition-all duration-300 ${
                     generationType === 'all' 
-                      ? "bg-white shadow-md hover:shadow-lg hover:scale-[1.02]" 
-                      : "hover:bg-white/50"
+                      ? "bg-white dark:bg-slate-800 shadow-md hover:shadow-lg hover:scale-[1.02]" 
+                      : "hover:bg-white/50 dark:hover:bg-slate-600"
                   }`}
                 >
                   Generate All
@@ -483,8 +509,8 @@ export default function App() {
                   onClick={() => setGenerationType('custom')}
                   className={`flex-1 transition-all duration-300 ${
                     generationType === 'custom' 
-                      ? "bg-white shadow-md hover:shadow-lg hover:scale-[1.02]" 
-                      : "hover:bg-white/50"
+                      ? "bg-white dark:bg-slate-800 shadow-md hover:shadow-lg hover:scale-[1.02]" 
+                      : "hover:bg-white/50 dark:hover:bg-slate-600"
                   }`}
                 >
                   Custom Generation
@@ -507,7 +533,7 @@ export default function App() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
-                          className="border border-slate-200 rounded-xl p-4 space-y-2 hover:shadow-md transition-all duration-300"
+                          className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-2 hover:shadow-md transition-all duration-300 dark:bg-slate-800/50"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -517,7 +543,7 @@ export default function App() {
                                 onClick={() => handleNameSelection(name)}
                                 className={`text-sm transition-all duration-300 ${
                                   selectedNames.includes(name) 
-                                    ? "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" 
+                                    ? "bg-blue-50 dark:bg-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300" 
                                     : ""
                                 }`}
                               >
@@ -528,7 +554,7 @@ export default function App() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => resetMonthSelection(name)}
-                                  className="text-slate-500 hover:text-slate-700"
+                                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                                 >
                                   <RotateCcw className="h-4 w-4" />
                                 </Button>
@@ -540,7 +566,7 @@ export default function App() {
                                   initial={{ opacity: 0, x: 20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: 20 }}
-                                  className="text-sm text-slate-600"
+                                  className="text-sm text-slate-600 dark:text-slate-400"
                                 >
                                   {nameMonthSelections[name]?.length || 0} months selected
                                 </motion.span>
@@ -569,8 +595,8 @@ export default function App() {
                                       onClick={() => handleMonthSelection(name, month)}
                                       className={`text-sm transition-all duration-300 ${
                                         nameMonthSelections[name]?.includes(month)
-                                          ? "bg-green-50 hover:bg-green-100 border-green-200 text-green-700 transform hover:scale-105" 
-                                          : "hover:bg-slate-100"
+                                          ? "bg-green-50 dark:bg-green-900/50 hover:bg-green-100 dark:hover:bg-green-900 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 transform hover:scale-105" 
+                                          : "hover:bg-slate-100 dark:hover:bg-slate-700"
                                       }`}
                                     >
                                       {month}
@@ -586,7 +612,7 @@ export default function App() {
 
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           Total images to generate: {
                             Object.values(nameMonthSelections).reduce(
                               (total, months) => total + months.length,
@@ -611,11 +637,11 @@ export default function App() {
                         <Button
                           onClick={stopGeneration}
                           variant="destructive"
-                          className="bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105"
+                          className="bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105"
                         >
                           <StopCircle className="h-4 w-4 mr-2" />
                           Stop Generation
-                        </Button> 
+                        </Button>
                       )}
                     </div>
                   </motion.div>
@@ -638,7 +664,7 @@ export default function App() {
                       <Button
                         onClick={stopGeneration}
                         variant="destructive"
-                        className="w-full bg-blue-500 hover:bg-blue-600 transition-all text-white duration-300 transform hover:scale-105"
+                        className="w-full bg-red-500 hover:bg-red-600 transition-all text-white duration-300 transform hover:scale-105"
                       >
                         <StopCircle className="h-4 w-4 mr-2" />
                         Stop Generation
@@ -658,14 +684,14 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2 }}
-              className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-slate-200"
+              className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-slate-200 dark:border-slate-700"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">{name}</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">{name}</h2>
                 <Button
                   variant="outline"
                   onClick={() => downloadImages(name)}
-                  className="flex items-center gap-2 hover:bg-blue-50 transition-all duration-300"
+                  className="flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all duration-300"
                 >
                   <Download className="h-4 w-4" />
                   Download All
@@ -710,12 +736,12 @@ export default function App() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative bg-white rounded-2xl p-4 w-full max-w-[600px] shadow-2xl"
+                className="relative bg-white dark:bg-slate-800 rounded-2xl p-4 w-full max-w-[600px] shadow-2xl"
                 onClick={e => e.stopPropagation()}
               >
                 <Button
                   variant="ghost"
-                  className="absolute top-2 right-2 z-10 hover:bg-slate-100 transition-colors duration-200"
+                  className="absolute top-2 right-2 z-10 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200"
                   onClick={() => setSelectedImage(null)}
                 >
                   <X className="h-4 w-4" />
@@ -746,3 +772,8 @@ export default function App() {
     </div>
   );
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+//App.jsx with dark mode enabled
+
